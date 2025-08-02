@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	// Parse command line flags
 	cliMode := flag.Bool("cli", false, "Run in CLI mode")
 	text := flag.String("text", "", "Text to encode in QR code (CLI mode)")
 	output := flag.String("output", "qr-code.png", "Output file path (CLI mode)")
@@ -33,7 +32,6 @@ func runCLI(text, output string) {
 		os.Exit(1)
 	}
 
-	// Create QR code
 	err := qrcode.WriteFile(text, qrcode.Medium, 256, output)
 	if err != nil {
 		log.Fatal("Error generating QR code:", err)
@@ -46,11 +44,9 @@ func runWebServer(port string) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
-	// Serve static files
 	r.Static("/static", "./static")
 	r.LoadHTMLGlob("templates/*")
 
-	// Routes
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"title": "QR Code Generator",
@@ -63,8 +59,7 @@ func runWebServer(port string) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Text is required"})
 			return
 		}
-
-		// Generate QR code
+		
 		filename := "static/qr-codes/generated-qr.png"
 		err := qrcode.WriteFile(text, qrcode.Medium, 256, filename)
 		if err != nil {
@@ -78,7 +73,6 @@ func runWebServer(port string) {
 		})
 	})
 
-	// Create static directories if they don't exist
 	os.MkdirAll("static/qr-codes", 0755)
 
 	fmt.Printf("Web server running on http://localhost:%s\n", port)

@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/generate": {
+      "runtime": "docker"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/generate",
+      "dest": "/api/generate"
+    }
+  ]
+}

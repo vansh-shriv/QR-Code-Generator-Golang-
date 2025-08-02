@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .qr-container {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px dashed #e1e5e9;
+            border-radius: 10px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .qr-code {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .placeholder {
+            color: #999;
+            font-style: italic;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #fdf2f2;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .success {
+            color: #27ae60;
+            background: #f0f9ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .download-btn {
+            background: #27ae60;
+            margin-top: 15px;
+        }
+
+        .download-btn:hover {
+            box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3);
+        }
+
+        .loading {
+            display: none;
+            color: #667eea;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QR Code Generator</h1>
+        
+        <form id="qrForm">
+            <div class="form-group">
+                <label for="text">Enter text or URL:</label>
+                <textarea id="text" name="text" placeholder="Enter the text or URL you want to encode in the QR code..." required></textarea>
+            </div>
+            
+            <button type="submit" class="btn">Generate QR Code</button>
+        </form>
+
+        <div class="loading" id="loading">Generating QR code...</div>
+        
+        <div class="qr-container" id="qrContainer">
+            <div class="placeholder">Your QR code will appear here</div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('qrForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const text = document.getElementById('text').value.trim();
+            if (!text) {
+                showError('Please enter some text to generate a QR code.');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const qrContainer = document.getElementById('qrContainer');
+            
+            loading.style.display = 'block';
+            qrContainer.innerHTML = '';
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `text=${encodeURIComponent(text)}`
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    const img = document.createElement('img');
+                    img.src = data.filename + '?t=' + new Date().getTime(); // Cache busting
+                    img.alt = 'Generated QR Code';
+                    img.className = 'qr-code';
+                    
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.textContent = 'Download QR Code';
+                    downloadBtn.className = 'btn download-btn';
+                    downloadBtn.onclick = () => {
+                        const link = document.createElement('a');
+                        link.href = data.filename;
+                        link.download = 'qr-code.png';
+                        link.click();
+                    };
+                    
+                    qrContainer.innerHTML = '';
+                    qrContainer.appendChild(img);
+                    qrContainer.appendChild(downloadBtn);
+                } else {
+                    showError(data.error || 'Failed to generate QR code.');
+                }
+            } catch (error) {
+                showError('An error occurred while generating the QR code.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        function showError(message) {
+            const qrContainer = document.getElementById('qrContainer');
+            qrContainer.innerHTML = `<div class="error">${message}</div>`;
+        }
+    </script>
+</body>
+</html> 
